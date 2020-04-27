@@ -20,6 +20,8 @@ public class Stage implements Serializable {
 
     static final File TREE_DIR = Tree.TREE_DIR;
 
+    static final File WORKING_DIR = Main.WORKING_DIR;
+
     public Stage() {
         STAGE_DIR.mkdir();
         STAGE_RM_DIR.mkdir();
@@ -34,9 +36,9 @@ public class Stage implements Serializable {
         save(this);
     }
 
-    public static void add(File source) {
+    public static void add(String sourceName) {
+        File source = Utils.join(WORKING_DIR, sourceName);
         if (source.exists()) {
-            String sourceName = source.getName();
             File dest = Utils.join(STAGE_DIR, sourceName);
             Commit currentCommit = Utils.readObject(TREE_DIR, Tree.class).
                     getCurrHead();

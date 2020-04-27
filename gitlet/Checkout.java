@@ -11,17 +11,11 @@ public class Checkout {
     static final File GITLET_DIR = Main.GITLET_DIR;
 
     public static void doCheckout(String[] args) {
-        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
         //case for if input is file name
         if (args.length == 3) {
             if (args[1].equals("--")) {
                 String input = args[2];
-                if (workingTree.getCurrHead().getBlobs().containsKey(input)) {
-                    Commit currHead = workingTree.getCurrHead();
-                    checkoutHelper(currHead, input);
-                } else {
-                    Utils.exit("File does not exist in that commit.");
-                }
+                checkoutFile(input);
             } else {
                 Utils.exit("Incorrect operands.");
             }
@@ -29,55 +23,75 @@ public class Checkout {
         } else if (args.length == 4) {
             if (args[2].equals("--")) {
                 String fileInput = args[3]; String commitID = args[1];
-                if (commitID.length() < 40) {
-                    HashSet<String> allCommits = workingTree.getAllCommits();
-                    for (File file : GITLET_DIR.listFiles()) {
-                        String fileName = file.getName();
-                        if (allCommits.contains(fileName)
-                                && fileName.contains(commitID)) {
-                            commitID = fileName;
-                        } else {
-                            Utils.exit("No commit with that id exists.");
-                        }
-                    }
-                }
-                if (workingTree.getAllCommits().contains(commitID)) {
-                    Commit selectedCommit =
-                            Utils.readObject(Utils.join(GITLET_DIR,
-                                    commitID), Commit.class);
-                    if (selectedCommit.getBlobs().containsKey(fileInput)) {
-                        checkoutHelper(selectedCommit, fileInput);
-                    } else {
-                        Utils.exit("File does not exist in that commit.");
-                    }
-                } else {
-                    Utils.exit("No commit with that id exists.");
-                }
+                checkoutCommitFile(fileInput, commitID);
             } else {
                 Utils.exit("Incorrect operands.");
             }
         //case for if input is branch
         } else {
             String branchName = args[1];
-            if (workingTree.getBranches().containsKey(branchName)) {
-                //if branch inputted is current branch
-                if (branchName.equals(workingTree.currentBranch())) {
-                    Utils.exit("No need to checkout the current branch.");
-                }
-                Commit selectedCommit = workingTree.getHead(branchName);
-                Commit currCommit = workingTree.getCurrHead();
-                if (trackedTest(currCommit, selectedCommit)) {
-                    checkoutHelper(selectedCommit, currCommit);
-                    workingTree.swapBranches();
-                    Stage.clear();
-                    Stage.clearRemoved();
+            checkoutBranch(branchName);
+        }
+    }
+
+    public static void checkoutFile(String input) {
+        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
+        if (workingTree.getCurrHead().getBlobs().containsKey(input)) {
+            Commit currHead = workingTree.getCurrHead();
+            checkoutHelper(currHead, input);
+        } else {
+            Utils.exit("File does not exist in that commit.");
+        }
+    }
+
+    public static void checkoutCommitFile(String fileInput, String commitID) {
+        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
+        if (commitID.length() < 40) {
+            HashSet<String> allCommits = workingTree.getAllCommits();
+            for (File file : GITLET_DIR.listFiles()) {
+                String fileName = file.getName();
+                if (allCommits.contains(fileName)
+                        && fileName.contains(commitID)) {
+                    commitID = fileName;
                 } else {
-                    Utils.exit("There is an untracked file in the "
-                            + "way; delete it, or add and commit it first.");
+                    Utils.exit("No commit with that id exists.");
                 }
-            } else {
-                Utils.exit("No such branch exists.");
             }
+        }
+        if (workingTree.getAllCommits().contains(commitID)) {
+            Commit selectedCommit =
+                    Utils.readObject(Utils.join(GITLET_DIR,
+                            commitID), Commit.class);
+            if (selectedCommit.getBlobs().containsKey(fileInput)) {
+                checkoutHelper(selectedCommit, fileInput);
+            } else {
+                Utils.exit("File does not exist in that commit.");
+            }
+        } else {
+            Utils.exit("No commit with that id exists.");
+        }
+    }
+
+    public static void checkoutBranch(String branchName) {
+        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
+        if (workingTree.getBranches().containsKey(branchName)) {
+            //if branch inputted is current branch
+            if (branchName.equals(workingTree.currentBranch())) {
+                Utils.exit("No need to checkout the current branch.");
+            }
+            Commit selectedCommit = workingTree.getHead(branchName);
+            Commit currCommit = workingTree.getCurrHead();
+            if (trackedTest(currCommit, selectedCommit)) {
+                checkoutHelper(selectedCommit, currCommit);
+                workingTree.swapBranches();
+                Stage.clear();
+                Stage.clearRemoved();
+            } else {
+                Utils.exit("There is an untracked file in the "
+                        + "way; delete it, or add and commit it first.");
+            }
+        } else {
+            Utils.exit("No such branch exists.");
         }
     }
 

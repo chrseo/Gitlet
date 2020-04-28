@@ -38,12 +38,21 @@ public class Stage implements Serializable {
 
     public static void add(String sourceName) {
         File source = Utils.join(WORKING_DIR, sourceName);
+        Commit currentCommit = Utils.readObject(TREE_DIR, Tree.class).
+                getCurrHead();
         if (source.exists()) {
             File dest = Utils.join(STAGE_DIR, sourceName);
-            Commit currentCommit = Utils.readObject(TREE_DIR, Tree.class).
-                    getCurrHead();
 
-            if (currentCommit.getBlobs().containsKey(sourceName)) {
+            if (currentCommit.getBlobs().containsKey(sourceName)
+                && Utils.filesSet(STAGE_RM_DIR).contains(sourceName)) {
+                String fileAddedContents = Utils.readContentsAsString(Utils.
+                        join(WORKING_DIR, sourceName));
+                String fileRemovedContents = Utils.readContentsAsString(Utils.
+                        join(STAGE_RM_DIR, sourceName));
+                if (fileAddedContents.equals(fileRemovedContents)) {
+                    clearRemoved();
+                }
+            } else if (currentCommit.getBlobs().containsKey(sourceName)) {
                 String sourceContents = Utils.readContentsAsString(source);
                 String commitContents = currentCommit.getBlobs().
                         get(sourceName).getContents();

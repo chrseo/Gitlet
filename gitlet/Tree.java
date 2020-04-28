@@ -24,8 +24,6 @@ public class Tree implements Serializable {
 
     static final File STAGE_RM_DIR = Stage.STAGE_RM_DIR;
 
-    static final String INIT_DATE = "Wed Dec 31 16:00:00 1969 -0800";
-
     static final String INIT_MESSAGE = "initial commit";
 
     public Tree() {
@@ -42,8 +40,8 @@ public class Tree implements Serializable {
             }
         }
 
-        Commit initCommit = new Commit(INIT_DATE, INIT_MESSAGE,
-                null, initBlobs);
+        Commit initCommit = new Commit(INIT_MESSAGE,
+                null, initBlobs, false, true);
 
         createCommitFile(initCommit);
         _allCommits.add(initCommit.getID());
@@ -59,7 +57,7 @@ public class Tree implements Serializable {
     /** Creates a new commit from the stage. By default new commit is the same
      *  as parent commit.
      * @param message message of the commit */
-    public void commitFromStage(String message) {
+    public void commitFromStage(String message, boolean isMerge, String parent2) {
 
         Stage staged = Utils.readObject(STAGED_SAVE, Stage.class);
 
@@ -96,15 +94,20 @@ public class Tree implements Serializable {
             }
         }
 
-        String date = DateTimeFormatter.ofPattern("EEE " + "LLL " + "dd "
-                + "HH:mm:ss " + "yyyy " + "Z").format(ZonedDateTime.now());
-
-        Commit newCommit = new Commit(date, message,
-                _currHead.getID(), blobs);
+        Commit newCommit;
+        if (isMerge) {
+            newCommit = new Commit(message,
+                    _currHead.getID(), blobs, true, false);
+            newCommit.setParent2ID(parent2);
+        } else {
+            newCommit = new Commit(message,
+                    _currHead.getID(), blobs, false, false);
+        }
         _allCommits.add(newCommit.getID());
 
         createCommitFile(newCommit);
 
+        // persistence built into last method
         setHead(newCommit);
     }
 
@@ -138,7 +141,6 @@ public class Tree implements Serializable {
             System.out.println("A branch with that name already exists.");
             System.exit(0);
         }
-        _branched = true;
         _branchNames.put(branchName, _currHead);
         save();
     }
@@ -151,7 +153,6 @@ public class Tree implements Serializable {
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
-        _branched = false;
         _branchNames.remove(branchName);
         save();
     }
@@ -190,5 +191,4 @@ public class Tree implements Serializable {
     private HashSet<String> _allCommits = new HashSet<>();
     private String _currentBranch;
     private Commit _currHead;
-    private boolean _branched = false;
 }

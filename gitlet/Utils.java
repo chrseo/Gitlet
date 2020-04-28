@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Formatter;
+import java.util.HashSet;
 import java.util.List;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -292,5 +293,18 @@ class Utils {
     static void exit(String message) {
         System.out.println(message);
         System.exit(0);
+    }
+
+    /** HashSet of all files in a given directory.
+     * @return HashSet*/
+    static HashSet<String> filesSet(File directory) {
+        File[] files = directory.listFiles();
+        HashSet<String> result = new HashSet<>();
+
+        for (File fileName : files) {
+            String fileString = fileName.getName();
+            result.add(fileString);
+        }
+        return result;
     }
 }

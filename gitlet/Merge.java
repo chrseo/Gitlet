@@ -53,6 +53,8 @@ public class Merge {
 
         workingTree.commitFromStage(commitMessage, true,
                                     inputHead.getID());
+        Stage.clear();
+        Stage.clearRemoved();
     }
 
     /** Checks modifications in both branches.
@@ -151,7 +153,7 @@ public class Merge {
             } else {
                 inputString = input.getContents();
             }
-            File conflictedFile = Utils.join(GITLET_DIR, fileName);
+            File conflictedFile = Utils.join(WORKING_DIR, fileName);
             if (!conflictedFile.exists()) {
                 try {
                     conflictedFile.createNewFile();
@@ -159,9 +161,9 @@ public class Merge {
                 }
             }
             String fileString = "<<<<<<< HEAD\n"
-                    + currString + "\n"
+                    + currString
                     + "=======\n"
-                    + inputString + "\n"
+                    + inputString
                     + ">>>>>>>\n";
             Utils.writeContents(conflictedFile, fileString);
             Stage.add(fileName);
@@ -289,6 +291,7 @@ public class Merge {
     }
 
     public static void mergeError(Tree workingTree, String inputBranch) {
+        Commit currHead = workingTree.getCurrHead();
         if (!workingTree.getBranches().containsKey(inputBranch)) {
             Utils.exit("A branch with that name does not exist.");
         }
@@ -301,17 +304,22 @@ public class Merge {
         if (staged.length != 0 || stagedRM.length != 0) {
             Utils.exit("You have uncommitted changes.");
         }
-
+        if (!Checkout.everythingTracked(currHead).isEmpty()) {
+            Utils.exit("There is an untracked file in the way; delete it, "
+                    + "or add and commit it first.");
+        }
     }
 
     /** Finds the latest common ancestor of the two branch heads of a tree.
      *  Assumes there are two heads.
      * @param workingTree tree to be examined
      * @return the split point */
-    public static Commit findSplitPoint(Tree workingTree, String inputtedBranch) {
+    public static Commit findSplitPoint(Tree workingTree,
+                                        String inputtedBranch) {
         Commit currHead = workingTree.getCurrHead();
         Commit otherHead = workingTree.getBranches().get(inputtedBranch);
-        HashSet<String> currAncestors = new HashSet<>();
+
+        ArrayList<String> currAncestors = new ArrayList<>();
         HashSet<String> otherAncestors = new HashSet<>();
         Commit splitPoint = null;
         while (currHead != null) {
@@ -327,6 +335,7 @@ public class Merge {
             otherAncestors.add(otherHead.getID());
             otherHead = otherHead.getParent();
         }
+        // iterate through current ancestors in order, starting from head
         for (String ancestor : currAncestors) {
             if (otherAncestors.contains(ancestor)) {
                 File file = Utils.join(GITLET_DIR, ancestor);

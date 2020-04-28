@@ -155,16 +155,13 @@ public class Checkout {
     public static HashSet<String> everythingTracked(Commit commit) {
         HashMap<String, Blob> blobs = commit.getBlobs();
         HashSet<String> fileNames = new HashSet<>();
-
         HashSet<String> result = new HashSet<>();
-
         for (File file : WORKING_DIR.listFiles()) {
             if (!file.isDirectory()) {
                 String fileName = file.getName();
                 fileNames.add(fileName);
             }
         }
-
         for (String file : fileNames) {
             if (!blobs.containsKey(file)) {
                 result.add(file);

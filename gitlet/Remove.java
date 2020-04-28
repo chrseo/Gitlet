@@ -41,6 +41,17 @@ public class Remove {
                 containsKey(fileName)) {
             addToStageRemoval(fileName);
             removeFromWorking(fileName);
+        // case where tracked file is deleted from directory and rm'd
+        } else if (!stagedFiles.contains(fileName) && currHead.getBlobs().
+                    containsKey(fileName)
+                    && !Utils.filesSet(WORKING_DIR).contains(fileName)) {
+            File removedFile = Utils.join(STAGE_RM_DIR, fileName);
+            try {
+                removedFile.createNewFile();
+            } catch (Exception ignored) {
+            }
+            String contents = currHead.getBlobs().get(fileName).getContents();
+            Utils.writeContents(removedFile, contents);
         } else {
             System.out.println("No reason to remove the file.");
             System.exit(0);

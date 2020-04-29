@@ -27,6 +27,9 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 class Utils {
 
+    /** Length of commit ID. */
+    static final int COMMIT_HASH_LENGTH = 40;
+
     /* SHA-1 HASH VALUES. */
 
     /**
@@ -272,18 +275,22 @@ class Utils {
         System.out.println();
     }
 
+
+
+    /* MISCELLANEOUS ADDED */
+
     /** Copies a file from a source to a destination. Replaces if target file exists.
      *  If target has same contents as source file, DOES NOT COPY.
      * @param source source file
-     * @param dest destination file
-     */
+     * @param dest destination file */
     static void copy(File source, File dest) {
         try {
             Files.copy(source.toPath(), dest.toPath());
-        } catch (Exception e) {
+        } catch (IOException e) {
             try {
                 Files.copy(source.toPath(), dest.toPath(), REPLACE_EXISTING);
-            } catch (Exception ignored) {
+            } catch (IOException ignored) {
+                return;
             }
         }
     }
@@ -306,5 +313,24 @@ class Utils {
             result.add(fileString);
         }
         return result;
+    }
+
+    /** If commitID given is abbreviated, will return full length.
+     * Otherwise, returns original commitID.
+     * @param commitID ID to be checked
+     * @return ID
+     */
+    static String checkAbbreviated(String commitID) {
+        File treeDir = Tree.TREE_DIR;
+        Tree workingTree = Utils.readObject(treeDir, Tree.class);
+        if (commitID.length() < COMMIT_HASH_LENGTH) {
+            HashSet<String> allCommits = workingTree.getAllCommits();
+            for (String commit : allCommits) {
+                if (commit.contains(commitID)) {
+                    commitID = commit;
+                }
+            }
+        }
+        return commitID;
     }
 }

@@ -1,31 +1,39 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
 
-/** Class for the structure of commit history.
+/** Structure of commit history.
  *  @author Chris Seo
  */
 public class Tree implements Serializable {
 
+    /** Stores commit tree. */
     static final File TREE_DIR = Utils.join(Main.GITLET_DIR, "tree");
 
+    /** Gitlet directory, where gitlet is stored. */
     static final File GITLET_DIR = Main.GITLET_DIR;
 
+    /** Working directory, where user initializes gitlet. */
     static final File WORKING_DIR = Main.WORKING_DIR;
 
+    /** Staged for addition directory. */
     static final File STAGE_DIR = Stage.STAGE_DIR;
 
+    /** Stores staged additions files. */
     static final File STAGED_SAVE = Stage.STAGED_SAVE;
 
+    /** Staged for removal directory. */
     static final File STAGE_RM_DIR = Stage.STAGE_RM_DIR;
 
+    /** Initial commit message. */
     static final String INIT_MESSAGE = "initial commit";
 
+    /** Constructor for gitlet commit tree. Makes an initial commit
+     * and sets up branches. */
     public Tree() {
         try {
             TREE_DIR.createNewFile();
@@ -54,30 +62,31 @@ public class Tree implements Serializable {
         save();
     }
 
+    /** Handles the commit command.
+     * @param args takes commit + message */
+    public void commitCommand(String[] args) {
+        commitFromStage(args[1], false, null);
+        Stage.clear();
+        Stage.clearRemoved();
+    }
+
     /** Creates a new commit from the stage. By default new commit is the same
      *  as parent commit.
      * @param message message of the commit */
     public void commitFromStage(String message, boolean isMerge, String parent2) {
-
         Stage staged = Utils.readObject(STAGED_SAVE, Stage.class);
-
         if (STAGE_RM_DIR.listFiles().length == 0 && staged.
                 getStagedFiles().size() == 0) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
         }
-
         HashMap<String, Blob> parentBlobs = _currHead.getBlobs();
         HashMap<String, Blob> blobs = new HashMap<>();
-
         if (parentBlobs != null) {
             blobs.putAll(parentBlobs);
         }
-
         File[] stagedFiles = STAGE_DIR.listFiles();
         File[] stagedRemovedFiles = STAGE_RM_DIR.listFiles();
-
-
         for (File file : stagedFiles) {
             if (!file.isDirectory()) {
                 Blob stagedBlob = new Blob(file);
@@ -93,7 +102,6 @@ public class Tree implements Serializable {
                 }
             }
         }
-
         Commit newCommit;
         if (isMerge) {
             newCommit = new Commit(message,
@@ -104,13 +112,11 @@ public class Tree implements Serializable {
                     _currHead.getID(), blobs, false, false);
         }
         _allCommits.add(newCommit.getID());
-
         createCommitFile(newCommit);
-
-        // persistence built into last method
         setHead(newCommit);
     }
 
+    /** Returns the current branch's head. */
     public Commit getCurrHead() {
         return _currHead;
     }
@@ -123,19 +129,16 @@ public class Tree implements Serializable {
         save();
     }
 
-    /** Sets the current head commit to head of other (noncurrent) branch.
-     *  Assumes that there are two branches when called. */
-    public void swapBranches() {
-        for (String branch : _branchNames.keySet()) {
-            if (!branch.equals(_currentBranch)) {
-                _currHead = _branchNames.get(branch);
-                _currentBranch = branch;
-                break;
-            }
-        }
+    /** Sets the current branch. Assumes that given branch exists.
+     * @param branchName branch to be set to */
+    public void setBranch(String branchName) {
+        _currHead = _branchNames.get(branchName);
+        _currentBranch = branchName;
         save();
     }
 
+    /** Adds a branch to the tree.
+     * @param branchName name of the branch */
     public void addBranch(String branchName) {
         if (_branchNames.containsKey(branchName)) {
             System.out.println("A branch with that name already exists.");
@@ -145,6 +148,8 @@ public class Tree implements Serializable {
         save();
     }
 
+    /** Removes a given branch from the tree.
+     * @param branchName name of branch to be removed */
     public void removeBranch(String branchName) {
         if (!_branchNames.containsKey(branchName)) {
             System.out.println("A branch with that name does not exist.");
@@ -157,27 +162,69 @@ public class Tree implements Serializable {
         save();
     }
 
+    /** Handles the reset command.
+     * @param args takes reset + commit ID */
+    public static void doReset(String[] args) {
+        String commitID = args[1];
+        commitID = Utils.checkAbbreviated(commitID);
+        File commitFile = Utils.join(GITLET_DIR, commitID);
+        if (!commitFile.exists()) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
+        Commit currCommit = workingTree.getCurrHead();
+        Commit inputtedCommit = commitFromFile(commitFile);
+        if (Checkout.trackedTest(currCommit, inputtedCommit)) {
+            Checkout.checkoutHelper(inputtedCommit, currCommit);
+            workingTree.setHead(inputtedCommit);
+            Stage.clear();
+            Stage.clearRemoved();
+        } else {
+            System.out.println("There is an untracked file in the "
+                    + "way; delete it, or add and commit it first.");
+            System.exit(0);
+        }
+    }
+
+    /** Helper for reset command.
+     * @param file name of commit
+     * @return a commit */
+    private static Commit commitFromFile(File file) {
+        return Utils.readObject(file, Commit.class);
+    }
+
+    /** Creates a file for the given commit.
+     * @param commit commit to be saved as a file */
     public static void createCommitFile(Commit commit) {
         File commitFile = Utils.join(GITLET_DIR, commit.getID());
         try {
             commitFile.createNewFile();
-        } catch (Exception ignored) {
+        } catch (IOException ignored) {
+            return;
         }
         Utils.writeObject(commitFile, commit);
     }
 
+    /** Returns current branch. */
     public String currentBranch() {
         return _currentBranch;
     }
 
+    /** Returns all commits. */
     public HashSet<String> getAllCommits() {
         return _allCommits;
     }
 
+    /** Returns the head commit at a given branch.
+     * @param branchName name of branch
+     * @return head of branch */
     public Commit getHead(String branchName) {
         return _branchNames.get(branchName);
     }
 
+    /** Returns branches and branch heads.
+     * @return HashMap of branch, branch head */
     public HashMap<String, Commit> getBranches() {
         return _branchNames;
     }
@@ -187,8 +234,15 @@ public class Tree implements Serializable {
         Utils.writeObject(TREE_DIR, this);
     }
 
+    /** Branch names. */
     private HashMap<String, Commit> _branchNames = new HashMap<>();
+
+    /** All commits ever made. */
     private HashSet<String> _allCommits = new HashSet<>();
+
+    /** Current branch. */
     private String _currentBranch;
+
+    /** Current branch's head. */
     private Commit _currHead;
 }

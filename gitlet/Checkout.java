@@ -1,17 +1,27 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/** Handles checkouts.
+ *  @author Chris Seo
+ */
 public class Checkout {
+
+    /** Working directory, where user initializes gitlet. */
     static final File WORKING_DIR = new File(System.getProperty("user.dir"));
-    static final File STAGED_FILES = Stage.STAGED_SAVE;
+
+    /** Stores commit tree. */
     static final File TREE_DIR = Tree.TREE_DIR;
+
+    /** Gitlet directory, where gitlet is stored. */
     static final File GITLET_DIR = Main.GITLET_DIR;
 
+    /** Does the checkout command.
+     * @param args takes checkout + args */
     public static void doCheckout(String[] args) {
-        //case for if input is file name
         if (args.length == 3) {
             if (args[1].equals("--")) {
                 String input = args[2];
@@ -19,21 +29,22 @@ public class Checkout {
             } else {
                 Utils.exit("Incorrect operands.");
             }
-        //case for if input is specific commit + file name
         } else if (args.length == 4) {
             if (args[2].equals("--")) {
-                String fileInput = args[3]; String commitID = args[1];
+                String commitID = args[1];
+                String fileInput = args[3];
                 checkoutCommitFile(fileInput, commitID);
             } else {
                 Utils.exit("Incorrect operands.");
             }
-        //case for if input is branch
         } else {
             String branchName = args[1];
             checkoutBranch(branchName);
         }
     }
 
+    /** Handles checkout for a given file in current head commit.
+     * @param input file name */
     public static void checkoutFile(String input) {
         Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
         if (workingTree.getCurrHead().getBlobs().containsKey(input)) {
@@ -44,20 +55,12 @@ public class Checkout {
         }
     }
 
+    /** Handles checkout for file and commit ID.
+     * @param fileInput file name in commit ID
+     * @param commitID commit ID */
     public static void checkoutCommitFile(String fileInput, String commitID) {
         Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-        if (commitID.length() < 40) {
-            HashSet<String> allCommits = workingTree.getAllCommits();
-            for (File file : GITLET_DIR.listFiles()) {
-                String fileName = file.getName();
-                if (allCommits.contains(fileName)
-                        && fileName.contains(commitID)) {
-                    commitID = fileName;
-                } else {
-                    Utils.exit("No commit with that id exists.");
-                }
-            }
-        }
+        commitID = Utils.checkAbbreviated(commitID);
         if (workingTree.getAllCommits().contains(commitID)) {
             Commit selectedCommit =
                     Utils.readObject(Utils.join(GITLET_DIR,
@@ -72,10 +75,11 @@ public class Checkout {
         }
     }
 
+    /** Handles checkout of branch.
+     * @param branchName takes branch name */
     public static void checkoutBranch(String branchName) {
         Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
         if (workingTree.getBranches().containsKey(branchName)) {
-            //if branch inputted is current branch
             if (branchName.equals(workingTree.currentBranch())) {
                 Utils.exit("No need to checkout the current branch.");
             }
@@ -83,7 +87,7 @@ public class Checkout {
             Commit currCommit = workingTree.getCurrHead();
             if (trackedTest(currCommit, selectedCommit)) {
                 checkoutHelper(selectedCommit, currCommit);
-                workingTree.swapBranches();
+                workingTree.setBranch(branchName);
                 Stage.clear();
                 Stage.clearRemoved();
             } else {
@@ -106,7 +110,8 @@ public class Checkout {
         if (!dest.exists()) {
             try {
                 dest.createNewFile();
-            } catch (Exception ignored) {
+            } catch (IOException ignored) {
+                return;
             }
         }
         Utils.writeContents(dest, newContents);
@@ -127,7 +132,6 @@ public class Checkout {
                 fileNames.add(fileName);
             }
         }
-        //will delete files tracked in fromCommit, but not in commit
         for (String fileName : fileNames) {
             if (!blobs.containsKey(fileName) && fromBlobs.
                     containsKey(fileName)) {
@@ -141,7 +145,8 @@ public class Checkout {
             if (!fileNames.contains(blobName)) {
                 try {
                     workingFile.createNewFile();
-                } catch (Exception ignored) {
+                } catch (IOException ignored) {
+                    return;
                 }
             }
             Utils.writeContents(workingFile, newContents);

@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
 
@@ -9,26 +10,33 @@ import java.util.HashSet;
  */
 public class Stage implements Serializable {
 
+    /** Staged for addition directory. */
     static final File STAGE_DIR = Utils.join(Main.GITLET_DIR,
             "stage");
 
+    /** Staged for removal directory. */
     static final File STAGE_RM_DIR = Utils.join(Main.GITLET_DIR,
             "stage_rm");
 
+    /** Stores staged additions files. */
     static final File STAGED_SAVE = Utils.join(Main.GITLET_DIR,
             "staged_save");
 
+    /** Stores commit tree. */
     static final File TREE_DIR = Tree.TREE_DIR;
 
+    /** Working directory, where user initializes gitlet. */
     static final File WORKING_DIR = Main.WORKING_DIR;
 
+    /** Constructor for the stage. Initializes stage directories. */
     public Stage() {
         STAGE_DIR.mkdir();
         STAGE_RM_DIR.mkdir();
 
         try {
             STAGED_SAVE.createNewFile();
-        } catch (Exception ignored) {
+        } catch (IOException ignored) {
+            return;
         }
 
         _stagedFiles = new HashSet<>();
@@ -36,6 +44,8 @@ public class Stage implements Serializable {
         save(this);
     }
 
+    /** Adds a file to stage for addition.
+     * @param sourceName name of file to be staged */
     public static void add(String sourceName) {
         File source = Utils.join(WORKING_DIR, sourceName);
         Commit currentCommit = Utils.readObject(TREE_DIR, Tree.class).
@@ -56,7 +66,6 @@ public class Stage implements Serializable {
                 String sourceContents = Utils.readContentsAsString(source);
                 String commitContents = currentCommit.getBlobs().
                         get(sourceName).getContents();
-
                 if (sourceContents.equals(commitContents)) {
                     addOrRemoveFromStagedHash(false, sourceName);
                     dest.delete();
@@ -74,11 +83,14 @@ public class Stage implements Serializable {
         }
     }
 
+    /** Clears all files staged for addition. */
     public static void clear() {
         if (STAGE_DIR.listFiles() != null) {
-            for(File file : STAGE_DIR.listFiles())
-                if (!file.isDirectory())
+            for (File file : STAGE_DIR.listFiles()) {
+                if (!file.isDirectory()) {
                     file.delete();
+                }
+            }
         }
         Stage saved = Utils.readObject(STAGED_SAVE,
                 Stage.class);
@@ -88,14 +100,18 @@ public class Stage implements Serializable {
         save(saved);
     }
 
+    /** Clears all files staged for removal. */
     public static void clearRemoved() {
         if (STAGE_RM_DIR.listFiles() != null) {
-            for(File file : STAGE_RM_DIR.listFiles())
-                if (!file.isDirectory())
+            for (File file : STAGE_RM_DIR.listFiles()) {
+                if (!file.isDirectory()) {
                     file.delete();
+                }
+            }
         }
     }
 
+    /** Get all files staged for addition. */
     public HashSet<String> getStagedFiles() {
         return _stagedFiles;
     }

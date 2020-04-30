@@ -1,7 +1,6 @@
 package gitlet;
 
 import java.io.File;
-import java.util.HashSet;
 
 /** Driver class for Gitlet, the tiny stupid version-control system.
  *  Initially checks for correct argument lengths.
@@ -9,16 +8,13 @@ import java.util.HashSet;
  */
 public class Main {
 
+    /** Working directory, where user initializes gitlet. */
     static final File WORKING_DIR = new File(System.getProperty("user.dir"));
 
+    /** Gitlet directory, where gitlet is stored. */
     static final File GITLET_DIR = Utils.join(WORKING_DIR, ".gitlet");
 
-    static final File STAGE_DIR = Stage.STAGE_DIR;
-
-    static final File STAGE_RM_DIR = Stage.STAGE_RM_DIR;
-
-    static final File STAGED_FILES = Stage.STAGED_SAVE;
-
+    /** Stores commit tree. */
     static final File TREE_DIR = Tree.TREE_DIR;
 
     /** Usage: java gitlet.Main ARGS, where ARGS contains
@@ -33,9 +29,6 @@ public class Main {
         } else {
             if (GITLET_DIR.exists()) {
                 switch (args[0]) {
-                case "test":
-                    test();
-                    break;
                 case "add":
                     addFile(args);
                     break;
@@ -85,10 +78,12 @@ public class Main {
         }
     }
 
+    /** Handle init.
+     * @param args takes init command */
     private static void init(String[] args) {
         if (GITLET_DIR.exists()) {
-            System.out.println("A Gitlet version-control system " +
-                    "already exists in the current directory.");
+            System.out.println("A Gitlet version-control system "
+                    + "already exists in the current directory.");
             System.exit(0);
         }
         if (args.length > 1) {
@@ -99,6 +94,8 @@ public class Main {
         Tree initializeTree = new Tree();
     }
 
+    /** Handle add.
+     * @param args takes add + file name */
     private static void addFile(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
@@ -107,6 +104,8 @@ public class Main {
         Stage.add(args[1]);
     }
 
+    /** Handle commit.
+     * @param args takes commit + message */
     private static void commit(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
@@ -117,11 +116,11 @@ public class Main {
             System.exit(0);
         }
         Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-        workingTree.commitFromStage(args[1], false, null);
-        Stage.clear();
-        Stage.clearRemoved();
+        workingTree.commitCommand(args);
     }
 
+    /** Handle checkout.
+     * @param args takes checkout + args */
     private static void checkout(String[] args) {
         if (args.length > 4) {
             Utils.exit("Incorrect operands.");
@@ -129,33 +128,18 @@ public class Main {
         Checkout.doCheckout(args);
     }
 
+    /** Handle logs (global and branch).
+     * @param args takes log command
+     * @param global true if global log */
     private static void log(String[] args, boolean global) {
         if (args.length > 1) {
             Utils.exit("Incorrect operands.");
         }
-
-        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-        if (global) {
-            for (String commitID : workingTree.getAllCommits()) {
-                File commitFile = findFromGitletDir(commitID);
-                Commit commit = Utils.readObject(commitFile, Commit.class);
-                System.out.println("===\n"
-                        + "commit " + commit.getID() + "\n"
-                        + "Date: " + commit.getTimestamp() + "\n"
-                        + commit.getMessage() + "\n");
-            }
-        } else {
-            Commit currHead = workingTree.getCurrHead();
-            while (currHead != null) {
-                System.out.println("===\n"
-                        + "commit " + currHead.getID() + "\n"
-                        + "Date: " + currHead.getTimestamp() + "\n"
-                        + currHead.getMessage() + "\n");
-                currHead = currHead.getParent();
-            }
-        }
+        Archive.doLog(global);
     }
 
+    /** Handle remove.
+     * @param args takes remove + file name */
     private static void rm(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
@@ -165,35 +149,18 @@ public class Main {
         Remove.doRemove(fileName);
     }
 
+    /** Handles find.
+     * @param args find + message of commit */
     private static void find(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-        HashSet<String> allCommits = workingTree.getAllCommits();
-        String message = args[1];
-        HashSet<String> result = new HashSet<>();
-
-        for (File file : GITLET_DIR.listFiles()) {
-            if (!file.isDirectory()) {
-                // if the file is a commit file, then check its message
-                // against input
-                if (allCommits.contains(file.getName())) {
-                    Commit currCommit = Utils.readObject(file, Commit.class);
-                    if (currCommit.getMessage().equals(message)) {
-                        System.out.println(currCommit.getID());
-                        result.add(currCommit.getID());
-                    }
-                }
-            }
-        }
-        if (result.isEmpty()) {
-            System.out.println("Found no commit with that message.");
-            System.exit(0);
-        }
+        Archive.doFind(args);
     }
 
+    /** Handle status.
+     * @param args takes status */
     private static void status(String[] args) {
         if (args.length > 1) {
             System.out.println("Incorrect operands.");
@@ -202,6 +169,8 @@ public class Main {
         Status.doStatus();
     }
 
+    /** Handle branch.
+     * @param args takes branch name */
     private static void branch(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
@@ -211,6 +180,8 @@ public class Main {
         workingTree.addBranch(args[1]);
     }
 
+    /** Handle rm-branch.
+     * @param args takes rm-branch */
     private static void removeBranch(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
@@ -220,56 +191,23 @@ public class Main {
         workingTree.removeBranch(args[1]);
     }
 
+    /** Handle reset.
+     * @param args takes reset + commit ID */
     private static void reset(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        File commitFile = Utils.join(GITLET_DIR, args[1]);
-        if (!commitFile.exists()) {
-            System.out.println("No commit with that id exists.");
-            System.exit(0);
-        }
-        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-        Commit currCommit = workingTree.getCurrHead();
-        Commit inputtedCommit = commitFromFile(commitFile);
-        if (Checkout.trackedTest(currCommit, inputtedCommit)) {
-            Checkout.checkoutHelper(inputtedCommit, currCommit);
-            workingTree.setHead(inputtedCommit);
-            Stage.clear();
-            Stage.clearRemoved();
-        } else {
-            System.out.println("There is an untracked file in the "
-                    + "way; delete it, or add and commit it first.");
-            System.exit(0);
-        }
+        Tree.doReset(args);
     }
 
+    /** Handle merge.
+     * @param args takes merge + branch name */
     private static void merge(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
         Merge.doMerge(args);
-    }
-
-    private static Commit commitFromFile(File file) {
-        return Utils.readObject(file, Commit.class);
-    }
-
-    private static File findFromGitletDir(String fileName) {
-        for (File file : GITLET_DIR.listFiles()) {
-            if (!file.isDirectory()) {
-                if (file.getName().equals(fileName)) {
-                    return file;
-                }
-            }
-        }
-        return null;
-    }
-
-    public static void test() {
-        Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
-
     }
 }

@@ -137,10 +137,12 @@ class Utils {
         try {
             if (file.isDirectory()) {
                 throw
-                        new IllegalArgumentException("cannot overwrite directory");
+                        new IllegalArgumentException("cannot o"
+                                + "verwrite directory");
             }
             BufferedOutputStream str =
-                    new BufferedOutputStream(Files.newOutputStream(file.toPath()));
+                    new BufferedOutputStream(Files.
+                            newOutputStream(file.toPath()));
             for (Object obj : contents) {
                 if (obj instanceof byte[]) {
                     str.write((byte[]) obj);
@@ -186,11 +188,11 @@ class Utils {
      */
     private static final FilenameFilter PLAIN_FILES =
             new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return new File(dir, name).isFile();
-                }
-            };
+        @Override
+        public boolean accept(File dir, String name) {
+            return new File(dir, name).isFile();
+        }
+    };
 
     /**
      * Returns a list of the names of all plain files in the directory DIR, in
@@ -279,8 +281,9 @@ class Utils {
 
     /* MISCELLANEOUS ADDED */
 
-    /** Copies a file from a source to a destination. Replaces if target file exists.
-     *  If target has same contents as source file, DOES NOT COPY.
+    /** Copies a file from a source to a destination. Replaces
+     *  if target file exists. If target has same contents as source
+     *  file, DOES NOT COPY.
      * @param source source file
      * @param dest destination file */
     static void copy(File source, File dest) {
@@ -303,6 +306,7 @@ class Utils {
     }
 
     /** HashSet of all files in a given directory.
+     * @param directory file directory
      * @return HashSet*/
     static HashSet<String> filesSet(File directory) {
         File[] files = directory.listFiles();

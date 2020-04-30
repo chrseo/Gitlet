@@ -120,7 +120,8 @@ public class Checkout {
     /** Writes the files from inputted commit to working directory.
      *  Overwrites and creates new files as necessary. Also deletes
      *  files to match commit.
-     * @param commit commit to select from */
+     * @param commit commit to select from
+     * @param fromCommit commit selecting to */
     public static void checkoutHelper(Commit commit, Commit fromCommit) {
         HashMap<String, Blob> blobs = commit.getBlobs();
         HashMap<String, Blob> fromBlobs = fromCommit.getBlobs();

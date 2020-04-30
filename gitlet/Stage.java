@@ -111,7 +111,8 @@ public class Stage implements Serializable {
         }
     }
 
-    /** Get all files staged for addition. */
+    /** Get all files staged for addition.
+     * @return files staged as a HashSet */
     public HashSet<String> getStagedFiles() {
         return _stagedFiles;
     }

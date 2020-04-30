@@ -37,9 +37,10 @@ public class Tree implements Serializable {
     public Tree() {
         try {
             TREE_DIR.createNewFile();
-        } catch (Exception e) {
+        } catch (IOException e) {
+            return;
         }
-        HashMap<String, Blob> initBlobs= new HashMap<>();
+        HashMap<String, Blob> initBlobs = new HashMap<>();
         for (File file : WORKING_DIR.listFiles()) {
             if (!file.isDirectory()) {
                 Blob blob = new Blob(file);
@@ -72,8 +73,11 @@ public class Tree implements Serializable {
 
     /** Creates a new commit from the stage. By default new commit is the same
      *  as parent commit.
-     * @param message message of the commit */
-    public void commitFromStage(String message, boolean isMerge, String parent2) {
+     * @param message message of the commit
+     * @param isMerge true if commit is merge
+     * @param parent2 not null if there is a merged in parent */
+    public void commitFromStage(String message, boolean isMerge,
+                                String parent2) {
         Stage staged = Utils.readObject(STAGED_SAVE, Stage.class);
         if (STAGE_RM_DIR.listFiles().length == 0 && staged.
                 getStagedFiles().size() == 0) {

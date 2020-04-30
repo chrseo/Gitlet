@@ -14,6 +14,8 @@ public class Archive {
     /** Gitlet directory, where gitlet is stored. */
     static final File GITLET_DIR = Main.GITLET_DIR;
 
+    /** Handles the log command for branch and global.
+     * @param global true if log should be global */
     public static void doLog(boolean global) {
         Tree workingTree = Utils.readObject(TREE_DIR, Tree.class);
         if (global) {

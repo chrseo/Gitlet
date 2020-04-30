@@ -303,6 +303,7 @@ public class Merge {
     /** Finds the latest common ancestor of the current branch's head and
      *  the inputted head. Assumes there is more than 1 head.
      * @param workingTree tree to be examined
+     * @param inputtedBranch branch given
      * @return the split point */
     public static Commit findSplitPoint(Tree workingTree,
                                         String inputtedBranch) {

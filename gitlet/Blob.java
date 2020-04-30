@@ -8,10 +8,11 @@ import java.io.Serializable;
  */
 public class Blob implements Serializable {
 
-    /** String to be hashed in with contents for ID */
+    /** String to be hashed in with contents for ID. */
     static final String BLOB_STR = "blob";
 
-    /** Constructor for Blob class. */
+    /** Constructor for Blob class.
+     * @param file to be made blob of */
     public Blob(File file) {
         _contents = Utils.readContentsAsString(file);
         _name = file.getName();

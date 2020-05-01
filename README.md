@@ -1,6 +1,10 @@
 # gitlet
 Version control system that implements the basic features of Git.
 
+## Command Line Usage
+In directory where Gitlet is installed:
+`java gitlet.Main [command]`
+
 ## Commands
 `init`: Initializes the .gitlet repository.  
 `add [file name]`: Add a file to be staged for addition.  

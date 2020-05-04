@@ -177,7 +177,7 @@ public class Checkout {
     }
 
     /** Returns true if both commits share an untracked file
-     *  and if current commit has all files tracked.
+     *  or if current commit has all files tracked.
      * @param currCommit current commit head
      * @param selectedCom commit switching to
      * @return true if both untracked */

@@ -2,7 +2,7 @@
 Version control system that implements the basic features of Git.
 
 ## Command Line Usage
-In directory where Gitlet is installed:  
+In working directory:
 `java gitlet.Main [command]`
 
 ## Commands

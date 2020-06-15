@@ -160,7 +160,7 @@ public class Main {
     }
 
     /** Handle status.
-     * @param args takes status */
+     * @param args takes status command */
     private static void status(String[] args) {
         if (args.length > 1) {
             System.out.println("Incorrect operands.");
@@ -181,7 +181,7 @@ public class Main {
     }
 
     /** Handle rm-branch.
-     * @param args takes rm-branch */
+     * @param args takes rm-branch command */
     private static void removeBranch(String[] args) {
         if (args.length > 2) {
             System.out.println("Incorrect operands.");
